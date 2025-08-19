@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIS RFP Template Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .info-section {
+            background: #f8f9fa;
+            border-left: 4px solid #2c3e50;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .section-title {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 30px 0 20px 0;
+            border-left: 5px solid #3498db;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        
+        button.success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        
+        button.warning {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+        
+        .vendor-responses {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .vendor-card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+        
+        .vendor-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .vendor-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .vendor-info div {
+            padding: 5px;
+        }
+        
+        .vendor-info strong {
+            color: #34495e;
+        }
+        
+        .preview-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .preview-section.active {
+            display: block;
+        }
+        
+        .preview-content {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #2c3e50;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #3498db;
+            margin-left: 5px;
+        }
+        
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-size: 12px;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .notes-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff5e6;
+            border-left: 4px solid #f39c12;
+            border-radius: 6px;
+        }
+        
+        .notes-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .notes-list li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 4px;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .notes-list li::before {
+            content: "📝";
+            position: absolute;
+            left: 8px;
+        }
+        
+        .timestamp {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Student Information System RFP Generator</h1>
+            <p class="subtitle">Request for Proposal Template - 650 Student Institution</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-section">
+                <h2>Instructions</h2>
+                <p>1. Fill in your institution's information below</p>
+                <p>2. Generate the RFP template to send to vendors</p>
+                <p>3. Vendors can fill out the template and return it</p>
+                <p>4. Use the comparison tool to evaluate responses</p>
+            </div>
+            
+            <form id="rfpForm">
+                <div class="section-title">Institution Information</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Institution Name <span class="required">*</span></label>
+                        <input type="text" id="institutionName" required value="Charleston School of Law" style="background-color: #f5f5f5; color: #666;" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Person <span class="required">*</span></label>
+                        <input type="text" id="contactPerson" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" id="contactEmail" required placeholder="john.doe@institution.edu">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="contactPhone" placeholder="(555) 123-4567">
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Students</label>
+                        <input type="number" id="studentCount" value="650" style="background-color: #f5f5f5; color: #666;" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>RFP Due Date <span class="required">*</span></label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                </div>
+                
+                <div class="section-title">Vendor Response Template</div>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">The following fields will be included in the RFP for vendors to complete:</p>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Vendor Company Name</label>
+                        <input type="text" id="vendorName" placeholder="To be filled by vendor">
+                    </div>
+                    <div class="form-group">
+                        <label>Bundle Server Costs (Annual)</label>
+                        <input type="text" id="bundleCosts" placeholder="$XXX,XXX">
+                    </div>
+                    <div class="form-group">
+                        <label>SIS Only Costs (Annual)</label>
+                        <input type="text" id="sisCosts" placeholder="$XXX,XXX">
+                    </div>
+                    <div class="form-group">
+                        <label>MFA User Login Capable?</label>
+                        <select id="mfaCapable">
+                            <option value="">Select...</option>
+                            <option value="Yes - Included">Yes - Included</option>
+                            <option value="Yes - Additional Cost">Yes - Additional Cost</option>
+                            <option value="No">No</option>
+                            <option value="Roadmap">On Roadmap</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Support Response Time (SLA Guarantee)</label>
+                        <input type="text" id="supportSLA" placeholder="e.g., 4 hours critical, 24 hours standard">
+                    </div>
+                    <div class="form-group">
+                        <label>Implementation Cost (One-time)</label>
+                        <input type="text" id="implCost" placeholder="$XXX,XXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Implementation Annualized (5 years)</label>
+                        <input type="text" id="impl5Year" placeholder="$XXX,XXX per year">
+                    </div>
+                    <div class="form-group">
+                        <label>Implementation Annualized (10 years)</label>
+                        <input type="text" id="impl10Year" placeholder="$XXX,XXX per year">
+                    </div>
+                    <div class="form-group">
+                        <label>Deployment Model</label>
+                        <select id="deploymentModel">
+                            <option value="">Select...</option>
+                            <option value="Cloud (SaaS)">Cloud (SaaS)</option>
+                            <option value="Self-Hosted On-Premise">Self-Hosted On-Premise</option>
+                            <option value="Hybrid">Hybrid</option>
+                            <option value="Managed Hosting">Managed Hosting</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Database Storage Type</label>
+                        <input type="text" id="dbType" placeholder="e.g., Oracle, MS SQL, PostgreSQL">
+                    </div>
+                    <div class="form-group">
+                        <label>Reporting Module Included?</label>
+                        <select id="reportingModule">
+                            <option value="">Select...</option>
+                            <option value="Yes - Basic">Yes - Basic Included</option>
+                            <option value="Yes - Advanced">Yes - Advanced Included</option>
+                            <option value="Additional Cost">Additional Cost Module</option>
+                            <option value="Third Party Required">Third Party Required</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Reporting Options</label>
+                        <input type="text" id="emailReporting" placeholder="e.g., Scheduled reports, alerts, dashboards">
+                    </div>
+                    <div class="form-group">
+                        <label>Custom SQL Query Reporting?</label>
+                        <select id="customSQL">
+                            <option value="">Select...</option>
+                            <option value="Yes - Full Access">Yes - Full Access</option>
+                            <option value="Yes - Limited">Yes - Limited Access</option>
+                            <option value="Yes - With Training">Yes - Requires Training</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Custom Reporting Included in Price?</label>
+                        <select id="customReportingIncluded">
+                            <option value="">Select...</option>
+                            <option value="Yes - Unlimited">Yes - Unlimited</option>
+                            <option value="Yes - Limited">Yes - Limited Number</option>
+                            <option value="No - Hourly Rate">No - Hourly Rate</option>
+                            <option value="No - Per Report">No - Per Report Fee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>License Cost Structure</label>
+                        <select id="licenseCostStructure">
+                            <option value="">Select...</option>
+                            <option value="All Inclusive">All Inclusive - Single Price</option>
+                            <option value="A La Carte">A La Carte - Individual Modules</option>
+                            <option value="Module Bundles">Module Bundles - Grouped Packages</option>
+                            <option value="Core Plus Addons">Core System + Optional Add-ons</option>
+                            <option value="Tiered Packages">Tiered Packages (Basic/Pro/Enterprise)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>3rd Party API/Webhook Integration</label>
+                        <select id="apiIntegration">
+                            <option value="">Select...</option>
+                            <option value="Full REST API">Full REST API</option>
+                            <option value="Limited API">Limited API</option>
+                            <option value="Webhooks Available">Webhooks Available</option>
+                            <option value="Both API and Webhooks">Both API and Webhooks</option>
+                            <option value="Custom Development Required">Custom Development Required</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Migration Timeline (weeks)</label>
+                        <input type="text" id="migrationTimeline" placeholder="e.g., 8-12 weeks">
+                    </div>
+                    <div class="form-group">
+                        <label>Advancement/Recruiting Integration</label>
+                        <input type="text" id="advancementIntegration" placeholder="List compatible systems">
+                    </div>
+                    <div class="form-group">
+                        <label>Integration Deployment Time (weeks)</label>
+                        <input type="text" id="integrationTime" placeholder="e.g., 4-6 weeks">
+                    </div>
+                </div>
+                
+                <div class="section-title">Training Requirements (Hours)</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>IT Staff Training (hours)</label>
+                        <input type="number" id="trainingIT" placeholder="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Business Office Training (hours)</label>
+                        <input type="number" id="trainingBusiness" placeholder="32">
+                    </div>
+                    <div class="form-group">
+                        <label>Financial Aid Training (hours)</label>
+                        <input type="number" id="trainingFinAid" placeholder="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Registrar Training (hours)</label>
+                        <input type="number" id="trainingRegistrar" placeholder="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Academic Affairs Training (hours)</label>
+                        <input type="number" id="trainingAcademic" placeholder="24">
+                    </div>
+                    <div class="form-group">
+                        <label>Other Staff Training (hours)</label>
+                        <input type="number" id="trainingOther" placeholder="16">
+                    </div>
+                    <div class="form-group">
+                        <label>Faculty Training (hours)</label>
+                        <input type="number" id="trainingFaculty" placeholder="8">
+                    </div>
+                    <div class="form-group">
+                        <label>Student Training (hours)</label>
+                        <input type="number" id="trainingStudents" placeholder="2">
+                    </div>
+                    <div class="form-group">
+                        <label>Training Documentation/Resources</label>
+                        <select id="trainingDocumentation">
+                            <option value="">Select...</option>
+                            <option value="Comprehensive">Comprehensive Documentation Suite</option>
+                            <option value="Video Library">Video Training Library</option>
+                            <option value="Online Knowledge Base">Online Knowledge Base</option>
+                            <option value="Quick Reference Guides">Quick Reference Guides Only</option>
+                            <option value="Limited">Limited Documentation</option>
+                            <option value="Additional Cost">Available at Additional Cost</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ongoing Training Support</label>
+                        <input type="text" id="ongoingTraining" placeholder="e.g., Monthly webinars, annual refreshers, on-demand courses">
+                    </div>
+                </div>
+                
+                <div class="section-title">Additional Notes</div>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Notes (Multiple users can add timestamped entries)</label>
+                        <textarea id="notesInput" placeholder="Enter your note here..."></textarea>
+                        <button type="button" onclick="addNote()" style="margin-top: 10px;">Add Note</button>
+                        <div id="notesList" class="notes-section" style="display: none;">
+                            <h4>Notes History:</h4>
+                            <ul id="notesDisplay" class="notes-list"></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" onclick="generateRFP()">📄 Generate RFP Document</button>
+                    <button type="button" onclick="generateExcel()" class="success">📊 Generate Excel Template</button>
+                    <button type="button" onclick="saveVendorResponse()" class="warning">💾 Save Vendor Response</button>
+                    <button type="button" onclick="compareVendors()" class="secondary">📈 Compare Vendors</button>
+                    <button type="button" onclick="clearForm()" class="secondary">🔄 Clear Form</button>
+                </div>
+            </form>
+            
+            <div id="preview" class="preview-section">
+                <h3>RFP Preview</h3>
+                <div class="preview-content" id="previewContent"></div>
+                <div class="button-group">
+                    <button onclick="downloadRFP()">📥 Download as Text</button>
+                    <button onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+                </div>
+            </div>
+            
+            <div id="vendorComparison" class="vendor-responses" style="display: none;">
+                <h3>Vendor Comparison</h3>
+                <div id="comparisonContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let vendors = [];
+        let notes = [];
+        
+        // Set default due date to 30 days from now
+        document.getElementById('dueDate').valueAsDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        
+        function addNote() {
+            const noteInput = document.getElementById('notesInput');
+            const noteText = noteInput.value.trim();
+            
+            if (noteText) {
+                const note = {
+                    text: noteText,
+                    timestamp: new Date().toLocaleString(),
+                    user: document.getElementById('contactPerson').value || 'Anonymous'
+                };
+                
+                notes.push(note);
+                noteInput.value = '';
+                displayNotes();
+            }
+        }
+        
+        function displayNotes() {
+            const notesList = document.getElementById('notesList');
+            const notesDisplay = document.getElementById('notesDisplay');
+            
+            if (notes.length > 0) {
+                notesList.style.display = 'block';
+                notesDisplay.innerHTML = notes.map(note => 
+                    `<li><span class="timestamp">[${note.timestamp}] ${note.user}:</span> ${note.text}</li>`
+                ).join('');
+            } else {
+                notesList.style.display = 'none';
+            }
+        }
+        
+        function generateRFP() {
+            const institutionName = document.getElementById('institutionName').value;
+            const contactPerson = document.getElementById('contactPerson').value;
+            const contactEmail = document.getElementById('contactEmail').value;
+            const contactPhone = document.getElementById('contactPhone').value;
+            const studentCount = document.getElementById('studentCount').value;
+            const dueDate = document.getElementById('dueDate').value;
+            
+            if (!institutionName || !contactPerson || !contactEmail || !dueDate) {
+                alert('Please fill in all required fields (marked with *)');
+                return;
+            }
+            
+            const rfpContent = `
+REQUEST FOR PROPOSAL (RFP)
+STUDENT INFORMATION SYSTEM
+================================================================================
+
+INSTITUTION INFORMATION
+--------------------------------------------------------------------------------
+Institution: ${institutionName}
+Student Population: ${studentCount} students
+Contact Person: ${contactPerson}
+Email: ${contactEmail}
+Phone: ${contactPhone || 'Not provided'}
+RFP Response Due Date: ${new Date(dueDate).toLocaleDateString()}
+
+INTRODUCTION
+--------------------------------------------------------------------------------
+${institutionName} is seeking proposals for a comprehensive Student Information System 
+(SIS) to support our ${studentCount} students. We require a modern, scalable solution 
+that can handle all aspects of student lifecycle management from admission through 
+graduation and alumni relations.
+
+VENDOR RESPONSE TEMPLATE
+================================================================================
+Please complete all fields below and return by the due date specified above.
+
+VENDOR INFORMATION
+--------------------------------------------------------------------------------
+Company Name: _________________________________
+Contact Person: _______________________________
+Title: ________________________________________
+Email: ________________________________________
+Phone: ________________________________________
+Website: ______________________________________
+
+PRICING STRUCTURE
+--------------------------------------------------------------------------------
+1. Bundle Server Costs (Annual): $______________
+   - Include all infrastructure, hosting, and server costs
+   - Specify what is included in bundle
+
+2. SIS Only Costs (Annual License): $___________
+   - Core SIS modules only
+   - List included modules: _____________________
+
+3. Implementation Cost (One-time): $_____________
+   - Include all professional services
+   - Data migration costs
+   - Initial training costs
+
+4. Implementation Cost Annualized:
+   - Over 5 years: $__________ per year
+   - Over 10 years: $_________ per year
+
+5. License Cost Structure:
+   [ ] All Inclusive - Single price for all modules
+   [ ] A La Carte - Purchase individual modules
+   [ ] Module Bundles - Groups of related modules
+   [ ] Core + Add-ons - Base system with optional modules
+   [ ] Tiered Packages - Different feature levels
+   Details: _______________________________
+   
+   If modular/bundled, specify restrictions:
+   _______________________________________
+   _______________________________________
+
+6. Additional Module Costs (if applicable):
+   Module Name                Annual Cost
+   _____________________     $___________
+   _____________________     $___________
+   _____________________     $___________
+
+TECHNICAL SPECIFICATIONS
+--------------------------------------------------------------------------------
+1. MFA (Multi-Factor Authentication) Capable:
+   [ ] Yes - Included in base price
+   [ ] Yes - Additional cost of $________
+   [ ] No - Not available
+   [ ] On product roadmap (ETA: _________)
+
+2. Deployment Model:
+   [ ] Cloud (SaaS) - Fully managed
+   [ ] Self-Hosted On-Premise
+   [ ] Hybrid (specify): __________________
+   [ ] Managed Hosting by vendor
+
+3. Database Storage Type:
+   Primary: ______________________________
+   Supported: ____________________________
+   Storage Limits: _______________________
+   Backup Frequency: _____________________
+
+4. System Architecture:
+   - Scalability approach: _______________
+   - Redundancy/DR capabilities: _________
+   - Uptime SLA: _________%
+
+SUPPORT & SERVICE LEVEL AGREEMENT
+--------------------------------------------------------------------------------
+1. Support Response Time Guarantees:
+   - Critical Issues: ______ hours
+   - High Priority: ________ hours
+   - Medium Priority: ______ hours
+   - Low Priority: _________ hours
+
+2. Support Availability:
+   [ ] 24/7/365
+   [ ] Business Hours Only (specify): _____
+   [ ] Extended Hours (specify): __________
+
+3. Support Channels:
+   [ ] Phone
+   [ ] Email
+   [ ] Chat
+   [ ] Ticketing System
+   [ ] Dedicated Account Manager
+
+4. MSA (Master Service Agreement) Terms:
+   - Penalty for SLA breach: _____________
+   - Credits/Remedies: ___________________
+
+REPORTING CAPABILITIES
+--------------------------------------------------------------------------------
+1. Reporting Module:
+   [ ] Basic reporting included
+   [ ] Advanced reporting included
+   [ ] Additional cost of $_______
+   [ ] Third-party tool required: ________
+
+2. Email Reporting Options:
+   [ ] Scheduled reports
+   [ ] Automated alerts
+   [ ] Dashboard subscriptions
+   [ ] Custom distribution lists
+   Details: ______________________________
+
+3. Custom SQL Query Access:
+   [ ] Full access to database
+   [ ] Limited/sandboxed access
+   [ ] Requires special training/certification
+   [ ] Not available
+   [ ] Available through support only
+
+4. Custom Report Development:
+   [ ] Unlimited custom reports included
+   [ ] Limited to ____ reports included
+   [ ] Hourly rate: $_____ per hour
+   [ ] Per report fee: $_____ per report
+
+INTEGRATION CAPABILITIES
+--------------------------------------------------------------------------------
+1. API/Webhook Support:
+   [ ] Full REST API documented
+   [ ] Limited API endpoints
+   [ ] Webhooks for real-time events
+   [ ] Both API and webhooks
+   [ ] Custom development required
+
+2. API Documentation:
+   [ ] Public documentation available
+   [ ] Available after contract
+   [ ] Developer portal access
+   [ ] Sample code provided
+
+3. Integration with Advancement/Recruiting:
+   Compatible Systems:
+   _______________________________________
+   _______________________________________
+   _______________________________________
+
+4. Common Integrations Available:
+   [ ] Canvas LMS
+   [ ] Blackboard
+   [ ] Moodle
+   [ ] Microsoft 365
+   [ ] Google Workspace
+   [ ] Slate CRM
+   [ ] Salesforce
+   [ ] Payment gateways (list): __________
+   [ ] Other: ____________________________
+
+IMPLEMENTATION & MIGRATION
+--------------------------------------------------------------------------------
+1. Data Migration Timeline: _______ weeks
+   - Assessment phase: _______ weeks
+   - Data mapping: ___________ weeks
+   - Test migration: _________ weeks
+   - Production migration: ____ weeks
+   - Validation phase: _______ weeks
+
+2. Data Migration Support:
+   [ ] Full vendor management
+   [ ] Joint effort required
+   [ ] Institution responsibility
+   [ ] Third party required
+
+3. Legacy System Support:
+   Systems we've migrated from:
+   _______________________________________
+   _______________________________________
+
+4. Integration Deployment Time: _____ weeks
+   - Per integration estimate: __________
+   - Parallel vs sequential: ____________
+
+TRAINING REQUIREMENTS
+--------------------------------------------------------------------------------
+Please specify estimated training hours for each group:
+
+1. IT/Technical Staff: _________ hours
+   - System administration: _____ hours
+   - Database management: _______ hours
+   - Integration management: ____ hours
+   - Troubleshooting: ___________ hours
+
+2. Business Office Staff: _______ hours
+   - Student billing: ___________ hours
+   - Financial reporting: _______ hours
+   - Payment processing: ________ hours
+
+3. Financial Aid Office: ________ hours
+   - Award management: __________ hours
+   - Federal reporting: _________ hours
+   - Verification processes: ____ hours
+
+4. Registrar Office: ____________ hours
+   - Registration management: ____ hours
+   - Transcript processing: ______ hours
+   - Degree audit: _______________ hours
+   - Enrollment reporting: _______ hours
+
+5. Academic Affairs: _____________ hours
+   - Course management: __________ hours
+   - Faculty assignments: ________ hours
+   - Academic planning: __________ hours
+
+6. Other Administrative Staff: ___ hours
+   - Admissions: ________________ hours
+   - Student services: __________ hours
+   - Alumni relations: __________ hours
+
+7. Faculty Training: _____________ hours
+   - Grade entry: _______________ hours
+   - Attendance tracking: _______ hours
+   - Advising tools: ____________ hours
+
+8. Student Training: _____________ hours
+   - Self-service portal: _______ hours
+   - Mobile app (if applicable): _ hours
+
+9. Training Delivery Methods:
+   [ ] On-site training
+   [ ] Virtual instructor-led
+   [ ] Self-paced online modules
+   [ ] Train-the-trainer approach
+   [ ] Ongoing webinar series
+
+10. Training Materials Provided:
+    [ ] Video tutorials
+    [ ] Written documentation
+    [ ] Quick reference guides
+    [ ] Sandbox environment
+    [ ] Certification programs
+    [ ] Online knowledge base
+    [ ] Regular webinars
+    [ ] On-demand courses
+
+11. Ongoing Training & Documentation:
+    [ ] Comprehensive documentation suite
+    [ ] Searchable knowledge base
+    [ ] Regular training webinars
+    [ ] Annual refresher training
+    [ ] New feature training included
+    [ ] Dedicated training portal
+    [ ] Mobile-accessible resources
+    
+    Documentation update frequency: _______
+    New employee onboarding support: ______
+    Turnover transition assistance: _______
+
+ADDITIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+1. Compliance & Security:
+   [ ] FERPA compliant
+   [ ] GDPR compliant
+   [ ] SOC 2 Type II certified
+   [ ] ISO 27001 certified
+   [ ] PCI DSS compliant (if processing payments)
+   [ ] State data privacy laws compliant
+
+2. Accessibility:
+   [ ] WCAG 2.1 Level AA compliant
+   [ ] Section 508 compliant
+   [ ] Mobile responsive design
+   [ ] Screen reader compatible
+
+3. Performance Metrics:
+   - Page load time: _______ seconds
+   - Concurrent users supported: _______
+   - Transaction processing time: ______
+   - Report generation time: ___________
+
+REFERENCES
+--------------------------------------------------------------------------------
+Please provide 3 references from similar-sized institutions (500-1000 students):
+
+Reference 1:
+Institution: __________________________
+Contact: ______________________________
+Email: ________________________________
+Phone: ________________________________
+Implementation Year: __________________
+
+Reference 2:
+Institution: __________________________
+Contact: ______________________________
+Email: ________________________________
+Phone: ________________________________
+Implementation Year: __________________
+
+Reference 3:
+Institution: __________________________
+Contact: ______________________________
+Email: ________________________________
+Phone: ________________________________
+Implementation Year: __________________
+
+ADDITIONAL NOTES & CLARIFICATIONS
+--------------------------------------------------------------------------------
+Please provide any additional information, clarifications, or notes that would
+help us evaluate your proposal:
+
+__________________________________________________________________________
+__________________________________________________________________________
+__________________________________________________________________________
+__________________________________________________________________________
+__________________________________________________________________________
+
+ATTACHMENTS REQUESTED
+--------------------------------------------------------------------------------
+Please include the following with your response:
+1. Product brochure/overview
+2. Technical architecture diagram
+3. Sample contract/MSA
+4. Detailed pricing sheet
+5. Implementation timeline template
+6. Training curriculum outline
+7. List of all available modules
+8. Security audit report (most recent)
+9. Product roadmap (next 2 years)
+10. Case studies from similar institutions
+
+SUBMISSION INSTRUCTIONS
+--------------------------------------------------------------------------------
+Please submit completed RFP response by ${new Date(dueDate).toLocaleDateString()} to:
+${contactPerson}
+${contactEmail}
+${contactPhone ? 'Phone: ' + contactPhone : ''}
+
+Electronic submissions preferred in PDF format.
+
+Thank you for your response to this RFP. We look forward to reviewing your proposal.
+
+================================================================================
+END OF RFP DOCUMENT
+`;
+            
+            document.getElementById('previewContent').textContent = rfpContent;
+            document.getElementById('preview').classList.add('active');
+            
+            // Scroll to preview
+            document.getElementById('preview').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            // Create RFP Response Sheet
+            const rfpData = [
+                ["SIS RFP RESPONSE TEMPLATE - " + document.getElementById('institutionName').value],
+                ["Due Date: " + document.getElementById('dueDate').value],
+                [],
+                ["SECTION", "FIELD", "RESPONSE", "NOTES"],
+                ["Vendor Info", "Company Name", "", ""],
+                ["Vendor Info", "Contact Person", "", ""],
+                ["Vendor Info", "Email", "", ""],
+                ["Vendor Info", "Phone", "", ""],
+                [],
+                ["Pricing", "Bundle Server Costs (Annual)", "", "Include all infrastructure costs"],
+                ["Pricing", "SIS Only Costs (Annual)", "", "Core modules only"],
+                ["Pricing", "Implementation Cost (One-time)", "", "All professional services"],
+                ["Pricing", "Implementation Annualized (5 years)", "", "Total impl cost / 5"],
+                ["Pricing", "Implementation Annualized (10 years)", "", "Total impl cost / 10"],
+                [],
+                ["Technical", "MFA Capable", "", "Yes-Included/Yes-Extra/No/Roadmap"],
+                ["Technical", "Deployment Model", "", "Cloud/On-Premise/Hybrid/Managed"],
+                ["Technical", "Database Type", "", "Oracle/MS SQL/PostgreSQL/Other"],
+                ["Technical", "Uptime SLA", "", "Percentage guaranteed"],
+                [],
+                ["Support", "Response Time - Critical", "", "Hours"],
+                ["Support", "Response Time - High", "", "Hours"],
+                ["Support", "Response Time - Medium", "", "Hours"],
+                ["Support", "Response Time - Low", "", "Hours"],
+                ["Support", "Support Hours", "", "24/7 or Business Hours"],
+                ["Support", "MSA Guarantee", "", "Yes/No - Details"],
+                [],
+                ["Reporting", "Reporting Module Included", "", "Basic/Advanced/Extra Cost"],
+                ["Reporting", "Email Reporting Options", "", "Describe capabilities"],
+                ["Reporting", "Custom SQL Access", "", "Full/Limited/None"],
+                ["Reporting", "Custom Reports in Price", "", "Unlimited/Limited/Extra"],
+                [],
+                ["Integration", "API/Webhook Support", "", "REST/Limited/Both/None"],
+                ["Integration", "Advancement System Compatible", "", "List systems"],
+                ["Integration", "Recruiting System Compatible", "", "List systems"],
+                ["Integration", "LMS Integration", "", "Canvas/Blackboard/Moodle/etc"],
+                ["Integration", "Data Migration Timeline", "", "Weeks"],
+                ["Integration", "Integration Deployment Time", "", "Weeks"],
+                [],
+                ["Training (Hours)", "IT Staff", "", "Total hours required"],
+                ["Training (Hours)", "Business Office", "", "Total hours required"],
+                ["Training (Hours)", "Financial Aid", "", "Total hours required"],
+                ["Training (Hours)", "Registrar", "", "Total hours required"],
+                ["Training (Hours)", "Academic Affairs", "", "Total hours required"],
+                ["Training (Hours)", "Other Staff", "", "Total hours required"],
+                ["Training (Hours)", "Faculty", "", "Total hours required"],
+                ["Training (Hours)", "Students", "", "Total hours required"],
+                ["Training (Hours)", "Total Training Hours", "", "Sum of all training"],
+                [],
+                ["Compliance", "FERPA Compliant", "", "Yes/No"],
+                ["Compliance", "GDPR Compliant", "", "Yes/No"],
+                ["Compliance", "SOC 2 Type II", "", "Yes/No"],
+                ["Compliance", "WCAG 2.1 AA", "", "Yes/No"],
+                [],
+                ["Notes", "Additional Information", "", ""],
+                ["Notes", "Concerns/Limitations", "", ""],
+                ["Notes", "Unique Value Proposition", "", ""]
+            ];
+            
+            const ws1 = XLSX.utils.aoa_to_sheet(rfpData);
+            
+            // Set column widths
+            ws1['!cols'] = [
+                { width: 20 },
+                { width: 35 },
+                { width: 30 },
+                { width: 40 }
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws1, "RFP Response");
+            
+            // Create Comparison Sheet
+            const comparisonHeaders = [
+                "Comparison Criteria",
+                "Weight %",
+                "Vendor 1",
+                "Score 1",
+                "Vendor 2", 
+                "Score 2",
+                "Vendor 3",
+                "Score 3",
+                "Notes"
+            ];
+            
+            const comparisonData = [
+                ["SIS VENDOR COMPARISON MATRIX"],
+                [],
+                comparisonHeaders,
+                ["Total Cost (5 year)", "25%", "", "", "", "", "", "", "Lower is better"],
+                ["Implementation Cost", "15%", "", "", "", "", "", "", "Consider timeline too"],
+                ["Technical Capabilities", "20%", "", "", "", "", "", "", "Features and flexibility"],
+                ["Support Quality", "15%", "", "", "", "", "", "", "SLA and availability"],
+                ["Training Requirements", "10%", "", "", "", "", "", "", "Less training is better"],
+                ["Integration Capabilities", "10%", "", "", "", "", "", "", "API and compatibility"],
+                ["Compliance & Security", "5%", "", "", "", "", "", "", "Must meet requirements"],
+                [],
+                ["TOTAL WEIGHTED SCORE", "100%", "", "=SUM(D4:D10)", "", "=SUM(F4:F10)", "", "=SUM(H4:H10)", ""]
+            ];
+            
+            const ws2 = XLSX.utils.aoa_to_sheet(comparisonData);
+            ws2['!cols'] = [
+                { width: 25 },
+                { width: 10 },
+                { width: 20 },
+                { width: 10 },
+                { width: 20 },
+                { width: 10 },
+                { width: 20 },
+                { width: 10 },
+                { width: 30 }
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws2, "Vendor Comparison");
+            
+            // Create References Sheet
+            const refData = [
+                ["VENDOR REFERENCES"],
+                [],
+                ["Vendor", "Institution", "Contact Name", "Email", "Phone", "Implementation Year", "Student Count", "Notes"],
+                ["", "", "", "", "", "", "", ""],
+                ["", "", "", "", "", "", "", ""],
+                ["", "", "", "", "", "", "", ""]
+            ];
+            
+            const ws3 = XLSX.utils.aoa_to_sheet(refData);
+            XLSX.utils.book_append_sheet(wb, ws3, "References");
+            
+            // Download the file
+            XLSX.writeFile(wb, `SIS_RFP_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+        
+        function saveVendorResponse() {
+            const vendorName = document.getElementById('vendorName').value;
+            
+            if (!vendorName) {
+                alert('Please enter vendor name');
+                return;
+            }
+            
+            const response = {
+                vendorName: vendorName,
+                bundleCosts: document.getElementById('bundleCosts').value,
+                sisCosts: document.getElementById('sisCosts').value,
+                mfaCapable: document.getElementById('mfaCapable').value,
+                supportSLA: document.getElementById('supportSLA').value,
+                implCost: document.getElementById('implCost').value,
+                impl5Year: document.getElementById('impl5Year').value,
+                impl10Year: document.getElementById('impl10Year').value,
+                deploymentModel: document.getElementById('deploymentModel').value,
+                dbType: document.getElementById('dbType').value,
+                reportingModule: document.getElementById('reportingModule').value,
+                emailReporting: document.getElementById('emailReporting').value,
+                customSQL: document.getElementById('customSQL').value,
+                customReportingIncluded: document.getElementById('customReportingIncluded').value,
+                apiIntegration: document.getElementById('apiIntegration').value,
+                migrationTimeline: document.getElementById('migrationTimeline').value,
+                advancementIntegration: document.getElementById('advancementIntegration').value,
+                integrationTime: document.getElementById('integrationTime').value,
+                trainingIT: document.getElementById('trainingIT').value,
+                trainingBusiness: document.getElementById('trainingBusiness').value,
+                trainingFinAid: document.getElementById('trainingFinAid').value,
+                trainingRegistrar: document.getElementById('trainingRegistrar').value,
+                trainingAcademic: document.getElementById('trainingAcademic').value,
+                trainingOther: document.getElementById('trainingOther').value,
+                trainingFaculty: document.getElementById('trainingFaculty').value,
+                trainingStudents: document.getElementById('trainingStudents').value,
+                notes: notes.map(n => `${n.timestamp} - ${n.user}: ${n.text}`).join('\n')
+            };
+            
+            vendors.push(response);
+            
+            // Save to localStorage
+            localStorage.setItem('sisRfpVendors', JSON.stringify(vendors));
+            
+            alert(`Vendor response saved! Total vendors: ${vendors.length}`);
+            
+            // Clear vendor-specific fields
+            document.getElementById('vendorName').value = '';
+            document.getElementById('bundleCosts').value = '';
+            document.getElementById('sisCosts').value = '';
+            // ... clear other fields as needed
+        }
+        
+        function compareVendors() {
+            // Load vendors from localStorage
+            const savedVendors = localStorage.getItem('sisRfpVendors');
+            if (savedVendors) {
+                vendors = JSON.parse(savedVendors);
+            }
+            
+            if (vendors.length === 0) {
+                alert('No vendor responses saved yet');
+                return;
+            }
+            
+            let comparisonHTML = `
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Criteria</th>
+                            ${vendors.map(v => `<th>${v.vendorName}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Bundle Costs</strong></td>
+                            ${vendors.map(v => `<td>${v.bundleCosts || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>SIS Only Costs</strong></td>
+                            ${vendors.map(v => `<td>${v.sisCosts || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Implementation Cost</strong></td>
+                            ${vendors.map(v => `<td>${v.implCost || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>5-Year Annualized</strong></td>
+                            ${vendors.map(v => `<td>${v.impl5Year || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Deployment Model</strong></td>
+                            ${vendors.map(v => `<td>${v.deploymentModel || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>MFA Capable</strong></td>
+                            ${vendors.map(v => `<td>${v.mfaCapable || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Support SLA</strong></td>
+                            ${vendors.map(v => `<td>${v.supportSLA || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Database Type</strong></td>
+                            ${vendors.map(v => `<td>${v.dbType || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>API Integration</strong></td>
+                            ${vendors.map(v => `<td>${v.apiIntegration || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Migration Timeline</strong></td>
+                            ${vendors.map(v => `<td>${v.migrationTimeline || 'N/A'}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Total Training Hours</strong></td>
+                            ${vendors.map(v => {
+                                const total = parseInt(v.trainingIT || 0) + 
+                                            parseInt(v.trainingBusiness || 0) +
+                                            parseInt(v.trainingFinAid || 0) +
+                                            parseInt(v.trainingRegistrar || 0) +
+                                            parseInt(v.trainingAcademic || 0) +
+                                            parseInt(v.trainingOther || 0) +
+                                            parseInt(v.trainingFaculty || 0) +
+                                            parseInt(v.trainingStudents || 0);
+                                return `<td>${total} hours</td>`;
+                            }).join('')}
+                        </tr>
+                    </tbody>
+                </table>
+                <button onclick="exportComparison()" style="margin-top: 20px;">Export Comparison to Excel</button>
+                <button onclick="clearVendors()" style="margin-top: 20px; background: #e74c3c;">Clear All Vendors</button>
+            `;
+            
+            document.getElementById('comparisonContent').innerHTML = comparisonHTML;
+            document.getElementById('vendorComparison').style.display = 'block';
+            document.getElementById('vendorComparison').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function exportComparison() {
+            const wb = XLSX.utils.book_new();
+            
+            const comparisonData = [
+                ["SIS Vendor Comparison Report"],
+                ["Generated: " + new Date().toLocaleString()],
+                [],
+                ["Criteria", ...vendors.map(v => v.vendorName)]
+            ];
+            
+            // Add all comparison fields
+            const fields = [
+                { label: "Bundle Costs", key: "bundleCosts" },
+                { label: "SIS Only Costs", key: "sisCosts" },
+                { label: "Implementation Cost", key: "implCost" },
+                { label: "5-Year Annualized", key: "impl5Year" },
+                { label: "10-Year Annualized", key: "impl10Year" },
+                { label: "MFA Capable", key: "mfaCapable" },
+                { label: "Support SLA", key: "supportSLA" },
+                { label: "Deployment Model", key: "deploymentModel" },
+                { label: "Database Type", key: "dbType" },
+                { label: "Reporting Module", key: "reportingModule" },
+                { label: "Email Reporting", key: "emailReporting" },
+                { label: "Custom SQL", key: "customSQL" },
+                { label: "Custom Reporting Included", key: "customReportingIncluded" },
+                { label: "API Integration", key: "apiIntegration" },
+                { label: "Migration Timeline", key: "migrationTimeline" },
+                { label: "Advancement Integration", key: "advancementIntegration" },
+                { label: "Integration Time", key: "integrationTime" },
+                { label: "IT Training (hrs)", key: "trainingIT" },
+                { label: "Business Office Training (hrs)", key: "trainingBusiness" },
+                { label: "Financial Aid Training (hrs)", key: "trainingFinAid" },
+                { label: "Registrar Training (hrs)", key: "trainingRegistrar" },
+                { label: "Academic Affairs Training (hrs)", key: "trainingAcademic" },
+                { label: "Other Staff Training (hrs)", key: "trainingOther" },
+                { label: "Faculty Training (hrs)", key: "trainingFaculty" },
+                { label: "Student Training (hrs)", key: "trainingStudents" }
+            ];
+            
+            fields.forEach(field => {
+                comparisonData.push([field.label, ...vendors.map(v => v[field.key] || "N/A")]);
+            });
+            
+            // Add total training hours
+            comparisonData.push([]);
+            comparisonData.push(["TOTAL TRAINING HOURS", ...vendors.map(v => {
+                const total = parseInt(v.trainingIT || 0) + 
+                            parseInt(v.trainingBusiness || 0) +
+                            parseInt(v.trainingFinAid || 0) +
+                            parseInt(v.trainingRegistrar || 0) +
+                            parseInt(v.trainingAcademic || 0) +
+                            parseInt(v.trainingOther || 0) +
+                            parseInt(v.trainingFaculty || 0) +
+                            parseInt(v.trainingStudents || 0);
+                return total;
+            })]);
+            
+            // Add notes section
+            comparisonData.push([]);
+            comparisonData.push(["NOTES"]);
+            vendors.forEach(v => {
+                if (v.notes) {
+                    comparisonData.push([v.vendorName + " Notes:", v.notes]);
+                }
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(comparisonData);
+            
+            // Set column widths
+            const cols = [{ width: 30 }];
+            vendors.forEach(() => cols.push({ width: 25 }));
+            ws['!cols'] = cols;
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Vendor Comparison");
+            
+            XLSX.writeFile(wb, `SIS_Vendor_Comparison_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+        
+        function clearVendors() {
+            if (confirm('Are you sure you want to clear all saved vendor responses?')) {
+                vendors = [];
+                localStorage.removeItem('sisRfpVendors');
+                document.getElementById('vendorComparison').style.display = 'none';
+                alert('All vendor responses cleared');
+            }
+        }
+        
+        function clearForm() {
+            if (confirm('Are you sure you want to clear the form?')) {
+                document.getElementById('rfpForm').reset();
+                document.getElementById('dueDate').valueAsDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                notes = [];
+                displayNotes();
+                document.getElementById('preview').classList.remove('active');
+            }
+        }
+        
+        function downloadRFP() {
+            const content = document.getElementById('previewContent').textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SIS_RFP_${document.getElementById('institutionName').value.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function copyToClipboard() {
+            const content = document.getElementById('previewContent').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('RFP content copied to clipboard!');
+            });
+        }
+        
+        // Load saved vendors on page load
+        window.onload = function() {
+            const savedVendors = localStorage.getItem('sisRfpVendors');
+            if (savedVendors) {
+                vendors = JSON.parse(savedVendors);
+                console.log(`Loaded ${vendors.length} saved vendor responses`);
+            }
+        };
+    </script>
+</body>
+</html>

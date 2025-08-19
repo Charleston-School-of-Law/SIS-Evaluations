@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIS Vendor KPI Dashboard - Charleston School of Law</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23667eea;stop-opacity:0.1"/><stop offset="100%" style="stop-color:%23764ba2;stop-opacity:0.1"/></linearGradient></defs><circle cx="100" cy="100" r="80" fill="url(%23g1)"/><circle cx="1100" cy="700" r="120" fill="url(%23g1)"/><circle cx="600" cy="400" r="150" fill="url(%23g1)"/></svg>') no-repeat center;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.6s ease;
+        }
+        
+        .kpi-card:hover::before {
+            transform: scale(1);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+        
+        .kpi-title {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .kpi-value {
+            font-size: 2.8em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: valueShine 3s ease-in-out infinite;
+        }
+        
+        @keyframes valueShine {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .kpi-change {
+            font-size: 0.9em;
+            color: #27ae60;
+        }
+        
+        .kpi-change.negative {
+            color: #e74c3c;
+        }
+        
+        .chart-container {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .vendor-form {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .vendor-list {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .vendor-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .vendor-table th {
+            background: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .vendor-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .vendor-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .notes-section {
+            background: #fff5e6;
+            border-left: 4px solid #f39c12;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .note-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .note-header {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .note-user {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .share-section {
+            background: #e8f6ff;
+            border-left: 4px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .share-link {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #3498db;
+            color: #0c5460;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #f39c12;
+            color: #856404;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">⚖️ Charleston School of Law</div>
+            <div class="subtitle">SIS Vendor Evaluation Dashboard</div>
+            <div style="margin-top: 15px; color: #95a5a6;">
+                650 Students | Law School | Charleston, SC
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">📊 KPI Dashboard</button>
+            <button class="tab" onclick="showTab('submission')">📝 Vendor Submission</button>
+            <button class="tab" onclick="showTab('comparison')">📈 Comparison Matrix</button>
+            <button class="tab" onclick="showTab('share')">🔗 Share & Export</button>
+            <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+        </div>
+        
+        <!-- KPI Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="alert alert-info">
+                <strong>Note:</strong> Industry average for law schools (500-1000 students): Annual License $150K-$250K, Implementation $200K-$400K
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Vendors Evaluated</div>
+                    <div class="kpi-value" id="totalVendors">0</div>
+                    <div class="kpi-change">Updated in real-time</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Average Annual Cost</div>
+                    <div class="kpi-value" id="avgAnnualCost">$0</div>
+                    <div class="kpi-change" id="costTrend">Calculating...</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Average Implementation</div>
+                    <div class="kpi-value" id="avgImplCost">$0</div>
+                    <div class="kpi-change">One-time cost</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Average 5-Year TCO</div>
+                    <div class="kpi-value" id="avgTCO">$0</div>
+                    <div class="kpi-change">Total ownership cost</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Cloud vs On-Premise</div>
+                    <div class="kpi-value" id="cloudRatio">0%</div>
+                    <div class="kpi-change">Cloud-based solutions</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Average Timeline</div>
+                    <div class="kpi-value" id="avgTimeline">0</div>
+                    <div class="kpi-change">Weeks to implement</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 style="color: #2c3e50; font-weight: 600; margin-bottom: 20px;">💰 Cost Comparison by Vendor</h3>
+                <div id="costChart" style="width: 100%; height: 400px;"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 style="color: #2c3e50; font-weight: 600; margin-bottom: 20px;">⏱️ Implementation Timeline Comparison</h3>
+                <div id="timelineChart" style="width: 100%; height: 400px;"></div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="chart-container" style="grid-column: span 2;">
+                    <h3 style="color: #2c3e50; font-weight: 600; margin-bottom: 20px;">📊 5-Year Total Cost of Ownership</h3>
+                    <div id="tcoChart" style="width: 100%; height: 400px;"></div>
+                </div>
+                <div class="chart-container">
+                    <h3 style="color: #2c3e50; font-weight: 600; margin-bottom: 20px;">🥧 Deployment Models</h3>
+                    <div id="deploymentChart" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+            
+            <div class="vendor-list">
+                <h3>Vendor Submissions Summary</h3>
+                <div id="vendorSummaryTable"></div>
+            </div>
+        </div>
+        
+        <!-- Vendor Submission Tab -->
+        <div id="submission" class="tab-content">
+            <div class="vendor-form">
+                <h3>Vendor Information Submission Form</h3>
+                <div class="alert alert-warning">
+                    <strong>Important:</strong> Most higher education SIS implementations exceed $100K annually and $100K for implementation. Please provide realistic estimates for a 650-student law school.
+                </div>
+                
+                <form id="vendorForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Vendor Name *</label>
+                            <select id="vendorName" onchange="checkCustomVendor(this)">
+                                <option value="">Select Vendor...</option>
+                                <option value="Ellucian Banner">Ellucian Banner</option>
+                                <option value="Ellucian Colleague">Ellucian Colleague</option>
+                                <option value="Workday Student">Workday Student</option>
+                                <option value="Oracle PeopleSoft">Oracle PeopleSoft</option>
+                                <option value="Anthology Student">Anthology Student</option>
+                                <option value="Jenzabar One">Jenzabar One</option>
+                                <option value="PowerCampus">PowerCampus</option>
+                                <option value="Campus Management">Campus Management</option>
+                                <option value="Unit4">Unit4 Student Management</option>
+                                <option value="Populi">Populi</option>
+                                <option value="SONIS">SONIS</option>
+                                <option value="Blackbaud SIS">Blackbaud SIS</option>
+                                <option value="Thesis Elements">Thesis Elements</option>
+                                <option value="Diamond SIS">Diamond SIS</option>
+                                <option value="Custom">Other (Specify)</option>
+                            </select>
+                            <input type="text" id="customVendor" placeholder="Enter vendor name" style="display:none; margin-top:10px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Contact Person *</label>
+                            <input type="text" id="contactPerson" placeholder="John Smith" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Contact Email *</label>
+                            <input type="email" id="contactEmail" placeholder="john@vendor.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Annual License Cost *</label>
+                            <input type="number" id="annualCost" placeholder="150000" min="50000" required>
+                            <small style="color: #7f8c8d;">Industry avg: $150K-$250K</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Implementation Cost *</label>
+                            <input type="number" id="implCost" placeholder="200000" min="50000" required>
+                            <small style="color: #7f8c8d;">Industry avg: $200K-$400K</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Annual Price Increase %</label>
+                            <input type="number" id="priceIncrease" placeholder="5" min="0" max="10" step="0.5">
+                            <small style="color: #7f8c8d;">Typical: 3-5% annually</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Deployment Model *</label>
+                            <select id="deploymentModel" required>
+                                <option value="">Select...</option>
+                                <option value="Cloud (SaaS)">Cloud (SaaS)</option>
+                                <option value="On-Premise">On-Premise</option>
+                                <option value="Hybrid">Hybrid</option>
+                                <option value="Managed Hosting">Managed Hosting</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Database Requirements</label>
+                            <select id="database">
+                                <option value="">Select...</option>
+                                <option value="Oracle (Additional $50K+/yr)">Oracle (Additional $50K+/yr)</option>
+                                <option value="MS SQL Server">MS SQL Server</option>
+                                <option value="PostgreSQL">PostgreSQL</option>
+                                <option value="MySQL">MySQL</option>
+                                <option value="Proprietary">Proprietary</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Implementation Timeline (weeks) *</label>
+                            <input type="number" id="timeline" placeholder="26" min="8" max="52" required>
+                            <small style="color: #7f8c8d;">Typical: 6-12 months</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Support Hours</label>
+                            <select id="supportHours">
+                                <option value="">Select...</option>
+                                <option value="24/7">24/7 Support</option>
+                                <option value="Business Hours">Business Hours Only</option>
+                                <option value="Extended">Extended Hours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>API Availability</label>
+                            <select id="apiAvailability">
+                                <option value="">Select...</option>
+                                <option value="Full REST API">Full REST API</option>
+                                <option value="Limited API">Limited API</option>
+                                <option value="No API">No API</option>
+                                <option value="Additional Cost">API at Additional Cost</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Training Hours Required</label>
+                            <input type="number" id="trainingHours" placeholder="200" min="0">
+                            <small style="color: #7f8c8d;">Total for all staff</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Student Portal</label>
+                            <select id="studentPortal">
+                                <option value="">Select...</option>
+                                <option value="Web & Mobile">Web & Mobile App</option>
+                                <option value="Web Only">Web Only</option>
+                                <option value="Mobile Only">Mobile App Only</option>
+                                <option value="None">Not Included</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>LMS Integration</label>
+                            <select id="lmsIntegration">
+                                <option value="">Select...</option>
+                                <option value="Canvas">Canvas</option>
+                                <option value="Blackboard">Blackboard</option>
+                                <option value="Moodle">Moodle</option>
+                                <option value="Multiple">Multiple LMS</option>
+                                <option value="None">No Integration</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Hidden Costs Estimate</label>
+                            <input type="number" id="hiddenCosts" placeholder="50000" min="0">
+                            <small style="color: #e74c3c;">Often not disclosed upfront</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Additional Notes (Multiple users can add)</label>
+                        <textarea id="noteInput" rows="3" placeholder="Enter your note about this vendor..."></textarea>
+                        <div style="margin-top: 10px;">
+                            <input type="text" id="noteUser" placeholder="Your name" style="width: 200px; margin-right: 10px;">
+                            <button type="button" onclick="addNote()">Add Note</button>
+                        </div>
+                    </div>
+                    
+                    <div id="notesDisplay" class="notes-section" style="display: none;">
+                        <h4>Notes History</h4>
+                        <div id="notesList"></div>
+                    </div>
+                    
+                    <div style="margin-top: 30px; text-align: center;">
+                        <button type="button" onclick="saveVendor()" class="btn-success">💾 Save Vendor</button>
+                        <button type="button" onclick="clearForm()">Clear Form</button>
+                        <button type="button" onclick="autoFillRealistic()" class="btn-warning">Auto-Fill Realistic Example</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Comparison Tab -->
+        <div id="comparison" class="tab-content">
+            <div class="vendor-list">
+                <h3>Detailed Vendor Comparison</h3>
+                <div id="comparisonTable"></div>
+                <div style="margin-top: 20px;">
+                    <button onclick="exportComparison()">📊 Export to Excel</button>
+                    <button onclick="generateReport()">📄 Generate Report</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Share Tab -->
+        <div id="share" class="tab-content">
+            <div class="share-section">
+                <h3>Share This Form</h3>
+                <p>Share this form with vendors to collect their submissions:</p>
+                <div class="share-link" id="shareLink"></div>
+                <button onclick="copyShareLink()">📋 Copy Link</button>
+                <button onclick="generateQR()">📱 Generate QR Code</button>
+                <button onclick="emailLink()">📧 Email Link</button>
+            </div>
+            
+            <div class="share-section" style="margin-top: 20px;">
+                <h3>Export Options</h3>
+                <button onclick="exportAllData()">📊 Export All Data (Excel)</button>
+                <button onclick="exportPDF()">📄 Export PDF Report</button>
+                <button onclick="exportJSON()">💾 Export JSON (Backup)</button>
+                <button onclick="importJSON()">📥 Import JSON</button>
+            </div>
+            
+            <div class="share-section" style="margin-top: 20px;">
+                <h3>Data Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Total Vendors</div>
+                        <div class="summary-value" id="summaryVendors">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Total Notes</div>
+                        <div class="summary-value" id="summaryNotes">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Last Updated</div>
+                        <div class="summary-value" id="summaryUpdated">Never</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Contributors</div>
+                        <div class="summary-value" id="summaryContributors">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="vendor-form">
+                <h3>Dashboard Settings</h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Institution Name</label>
+                        <input type="text" id="institutionName" value="Charleston School of Law">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Student Count</label>
+                        <input type="number" id="studentCount" value="650">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Institution Type</label>
+                        <select id="institutionType">
+                            <option value="Law School" selected>Law School</option>
+                            <option value="Business School">Business School</option>
+                            <option value="Liberal Arts">Liberal Arts</option>
+                            <option value="STEM">STEM Focus</option>
+                            <option value="Comprehensive">Comprehensive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Budget Range</label>
+                        <select id="budgetRange">
+                            <option value="Under $100K">Under $100K/year</option>
+                            <option value="$100K-$200K" selected>$100K-$200K/year</option>
+                            <option value="$200K-$300K">$200K-$300K/year</option>
+                            <option value="Over $300K">Over $300K/year</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button onclick="saveSettings()" class="btn-success">Save Settings</button>
+                    <button onclick="resetData()" class="btn-danger">Reset All Data</button>
+                </div>
+                
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <strong>Data Storage:</strong> All data is stored locally in your browser. Use the Export/Import functions to backup or share data.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let vendors = [];
+        let notes = [];
+        let settings = {
+            institutionName: 'Charleston School of Law',
+            studentCount: 650,
+            institutionType: 'Law School',
+            budgetRange: '$100K-$200K'
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateDashboard();
+            generateShareLink();
+        });
+        
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                updateDashboard();
+                updateCharts();
+            } else if (tabName === 'comparison') {
+                updateComparisonTable();
+            }
+        }
+        
+        // Check for custom vendor
+        function checkCustomVendor(select) {
+            const customInput = document.getElementById('customVendor');
+            if (select.value === 'Custom') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+            }
+        }
+        
+        // Add note
+        function addNote() {
+            const noteText = document.getElementById('noteInput').value.trim();
+            const noteUser = document.getElementById('noteUser').value.trim() || 'Anonymous';
+            
+            if (noteText) {
+                const note = {
+                    id: Date.now(),
+                    text: noteText,
+                    user: noteUser,
+                    timestamp: new Date().toISOString(),
+                    vendorId: null // Will be linked when vendor is saved
+                };
+                
+                notes.push(note);
+                displayNotes();
+                document.getElementById('noteInput').value = '';
+            }
+        }
+        
+        // Display notes
+        function displayNotes() {
+            const notesDisplay = document.getElementById('notesDisplay');
+            const notesList = document.getElementById('notesList');
+            
+            if (notes.length > 0) {
+                notesDisplay.style.display = 'block';
+                notesList.innerHTML = notes.map(note => `
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span class="note-user">${note.user}</span> - 
+                            ${new Date(note.timestamp).toLocaleString()}
+                        </div>
+                        <div>${note.text}</div>
+                    </div>
+                `).join('');
+            } else {
+                notesDisplay.style.display = 'none';
+            }
+        }
+        
+        // Save vendor
+        function saveVendor() {
+            const vendorSelect = document.getElementById('vendorName');
+            const vendorName = vendorSelect.value === 'Custom' ? 
+                document.getElementById('customVendor').value : 
+                vendorSelect.value;
+            
+            if (!vendorName) {
+                alert('Please select or enter a vendor name');
+                return;
+            }
+            
+            const vendor = {
+                id: Date.now(),
+                name: vendorName,
+                contactPerson: document.getElementById('contactPerson').value,
+                contactEmail: document.getElementById('contactEmail').value,
+                annualCost: parseFloat(document.getElementById('annualCost').value) || 0,
+                implCost: parseFloat(document.getElementById('implCost').value) || 0,
+                priceIncrease: parseFloat(document.getElementById('priceIncrease').value) || 5,
+                deploymentModel: document.getElementById('deploymentModel').value,
+                database: document.getElementById('database').value,
+                timeline: parseInt(document.getElementById('timeline').value) || 26,
+                supportHours: document.getElementById('supportHours').value,
+                apiAvailability: document.getElementById('apiAvailability').value,
+                trainingHours: parseInt(document.getElementById('trainingHours').value) || 0,
+                studentPortal: document.getElementById('studentPortal').value,
+                lmsIntegration: document.getElementById('lmsIntegration').value,
+                hiddenCosts: parseFloat(document.getElementById('hiddenCosts').value) || 0,
+                notes: notes.filter(n => n.vendorId === null || n.vendorId === vendor.id),
+                submittedAt: new Date().toISOString()
+            };
+            
+            // Link notes to this vendor
+            notes.forEach(note => {
+                if (note.vendorId === null) {
+                    note.vendorId = vendor.id;
+                }
+            });
+            
+            // Check if vendor exists and update or add
+            const existingIndex = vendors.findIndex(v => v.name === vendor.name);
+            if (existingIndex !== -1) {
+                if (confirm(`${vendor.name} already exists. Update with new information?`)) {
+                    vendors[existingIndex] = vendor;
+                } else {
+                    return;
+                }
+            } else {
+                vendors.push(vendor);
+            }
+            
+            saveData();
+            alert(`Vendor ${vendor.name} saved successfully!`);
+            clearForm();
+            updateDashboard();
+        }
+        
+        // Clear form
+        function clearForm() {
+            document.getElementById('vendorForm').reset();
+            document.getElementById('customVendor').style.display = 'none';
+            notes = notes.filter(n => n.vendorId !== null);
+            displayNotes();
+        }
+        
+        // Auto-fill realistic example
+        function autoFillRealistic() {
+            const examples = [
+                {
+                    vendor: 'Ellucian Banner',
+                    annual: 250000,
+                    impl: 400000,
+                    timeline: 36,
+                    model: 'Cloud (SaaS)',
+                    database: 'Oracle (Additional $50K+/yr)'
+                },
+                {
+                    vendor: 'Workday Student',
+                    annual: 300000,
+                    impl: 500000,
+                    timeline: 40,
+                    model: 'Cloud (SaaS)',
+                    database: 'Proprietary'
+                },
+                {
+                    vendor: 'Anthology Student',
+                    annual: 150000,
+                    impl: 200000,
+                    timeline: 26,
+                    model: 'Cloud (SaaS)',
+                    database: 'MS SQL Server'
+                },
+                {
+                    vendor: 'Jenzabar One',
+                    annual: 175000,
+                    impl: 250000,
+                    timeline: 30,
+                    model: 'Cloud (SaaS)',
+                    database: 'MS SQL Server'
+                }
+            ];
+            
+            const example = examples[Math.floor(Math.random() * examples.length)];
+            
+            document.getElementById('vendorName').value = example.vendor;
+            document.getElementById('contactPerson').value = 'Demo User';
+            document.getElementById('contactEmail').value = 'demo@vendor.com';
+            document.getElementById('annualCost').value = example.annual;
+            document.getElementById('implCost').value = example.impl;
+            document.getElementById('priceIncrease').value = 5;
+            document.getElementById('deploymentModel').value = example.model;
+            document.getElementById('database').value = example.database;
+            document.getElementById('timeline').value = example.timeline;
+            document.getElementById('supportHours').value = '24/7';
+            document.getElementById('apiAvailability').value = 'Full REST API';
+            document.getElementById('trainingHours').value = 200;
+            document.getElementById('studentPortal').value = 'Web & Mobile';
+            document.getElementById('lmsIntegration').value = 'Canvas';
+            document.getElementById('hiddenCosts').value = 50000;
+        }
+        
+        // Update dashboard
+        function updateDashboard() {
+            // Update KPIs
+            document.getElementById('totalVendors').textContent = vendors.length;
+            
+            if (vendors.length > 0) {
+                const avgAnnual = vendors.reduce((sum, v) => sum + v.annualCost, 0) / vendors.length;
+                const avgImpl = vendors.reduce((sum, v) => sum + v.implCost, 0) / vendors.length;
+                const avgTCO = vendors.reduce((sum, v) => sum + (v.annualCost * 5 + v.implCost), 0) / vendors.length;
+                const avgTime = vendors.reduce((sum, v) => sum + v.timeline, 0) / vendors.length;
+                const cloudCount = vendors.filter(v => v.deploymentModel === 'Cloud (SaaS)').length;
+                
+                document.getElementById('avgAnnualCost').textContent = '$' + Math.round(avgAnnual).toLocaleString();
+                document.getElementById('avgImplCost').textContent = '$' + Math.round(avgImpl).toLocaleString();
+                document.getElementById('avgTCO').textContent = '$' + Math.round(avgTCO).toLocaleString();
+                document.getElementById('avgTimeline').textContent = Math.round(avgTime) + ' weeks';
+                document.getElementById('cloudRatio').textContent = Math.round((cloudCount / vendors.length) * 100) + '%';
+                
+                // Update cost trend
+                const industryAvg = 175000; // Industry average for law schools
+                const costDiff = ((avgAnnual - industryAvg) / industryAvg) * 100;
+                const costTrend = document.getElementById('costTrend');
+                if (costDiff > 0) {
+                    costTrend.textContent = `+${costDiff.toFixed(1)}% vs industry avg`;
+                    costTrend.className = 'kpi-change negative';
+                } else {
+                    costTrend.textContent = `${costDiff.toFixed(1)}% vs industry avg`;
+                    costTrend.className = 'kpi-change';
+                }
+            }
+            
+            // Update vendor summary table
+            updateVendorSummaryTable();
+            
+            // Update charts
+            updateCharts();
+        }
+        
+        // Update vendor summary table
+        function updateVendorSummaryTable() {
+            const container = document.getElementById('vendorSummaryTable');
+            
+            if (vendors.length === 0) {
+                container.innerHTML = '<p>No vendors submitted yet.</p>';
+                return;
+            }
+            
+            const tableHTML = `
+                <table class="vendor-table">
+                    <thead>
+                        <tr>
+                            <th>Vendor</th>
+                            <th>Annual Cost</th>
+                            <th>Implementation</th>
+                            <th>5-Year TCO</th>
+                            <th>Timeline</th>
+                            <th>Deployment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${vendors.map(v => `
+                            <tr>
+                                <td><strong>${v.name}</strong></td>
+                                <td>$${v.annualCost.toLocaleString()}</td>
+                                <td>$${v.implCost.toLocaleString()}</td>
+                                <td>$${(v.annualCost * 5 + v.implCost).toLocaleString()}</td>
+                                <td>${v.timeline} weeks</td>
+                                <td>${v.deploymentModel}</td>
+                                <td>
+                                    <button onclick="viewVendor(${v.id})" style="padding: 5px 10px; font-size: 12px;">View</button>
+                                    <button onclick="deleteVendor(${v.id})" style="padding: 5px 10px; font-size: 12px;" class="btn-danger">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+        
+        // Update charts with Plotly
+        function updateCharts() {
+            if (vendors.length === 0) return;
+            
+            // Cost comparison chart with Plotly
+            const costData = [
+                {
+                    x: vendors.map(v => v.name),
+                    y: vendors.map(v => v.annualCost),
+                    name: 'Annual Cost',
+                    type: 'bar',
+                    marker: {
+                        color: 'rgba(102, 126, 234, 0.8)',
+                        line: {
+                            color: 'rgba(102, 126, 234, 1)',
+                            width: 2
+                        }
+                    },
+                    text: vendors.map(v => '$' + v.annualCost.toLocaleString()),
+                    textposition: 'outside',
+                    hovertemplate: '<b>%{x}</b><br>Annual Cost: $%{y:,.0f}<extra></extra>'
+                },
+                {
+                    x: vendors.map(v => v.name),
+                    y: vendors.map(v => v.implCost),
+                    name: 'Implementation Cost',
+                    type: 'bar',
+                    marker: {
+                        color: 'rgba(118, 75, 162, 0.8)',
+                        line: {
+                            color: 'rgba(118, 75, 162, 1)',
+                            width: 2
+                        }
+                    },
+                    text: vendors.map(v => '$' + v.implCost.toLocaleString()),
+                    textposition: 'outside',
+                    hovertemplate: '<b>%{x}</b><br>Implementation: $%{y:,.0f}<extra></extra>'
+                }
+            ];
+            
+            const costLayout = {
+                barmode: 'group',
+                xaxis: {
+                    title: 'Vendors',
+                    tickangle: -45
+                },
+                yaxis: {
+                    title: 'Cost ($)',
+                    tickformat: '$,.0f'
+                },
+                margin: { t: 20, b: 100 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: {
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                },
+                hoverlabel: {
+                    bgcolor: 'white',
+                    bordercolor: '#667eea',
+                    font: { size: 13 }
+                },
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1,
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#667eea',
+                    borderwidth: 1
+                }
+            };
+            
+            Plotly.newPlot('costChart', costData, costLayout, {responsive: true});
+            
+            // Timeline chart
+            const timelineData = [{
+                y: vendors.map(v => v.name),
+                x: vendors.map(v => v.timeline),
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: vendors.map(v => v.timeline),
+                    colorscale: [
+                        [0, 'rgb(46, 204, 113)'],
+                        [0.5, 'rgb(241, 196, 15)'],
+                        [1, 'rgb(231, 76, 60)']
+                    ],
+                    cmin: 8,
+                    cmax: 52,
+                    showscale: true,
+                    colorbar: {
+                        title: 'Weeks',
+                        thickness: 15
+                    },
+                    line: {
+                        color: 'rgba(0,0,0,0.2)',
+                        width: 1
+                    }
+                },
+                text: vendors.map(v => v.timeline + ' weeks'),
+                textposition: 'outside',
+                hovertemplate: '<b>%{y}</b><br>Timeline: %{x} weeks<extra></extra>'
+            }];
+            
+            const timelineLayout = {
+                xaxis: {
+                    title: 'Implementation Timeline (weeks)',
+                    range: [0, Math.max(...vendors.map(v => v.timeline)) * 1.2]
+                },
+                yaxis: {
+                    automargin: true
+                },
+                margin: { l: 150, t: 20 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: {
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }
+            };
+            
+            Plotly.newPlot('timelineChart', timelineData, timelineLayout, {responsive: true});
+            
+            // 5-Year TCO Chart
+            const tcoData = [{
+                x: vendors.map(v => v.name),
+                y: vendors.map(v => v.annualCost * 5 + v.implCost),
+                type: 'scatter',
+                mode: 'markers+lines',
+                marker: {
+                    size: vendors.map(v => Math.sqrt((v.annualCost * 5 + v.implCost) / 10000) * 10),
+                    color: vendors.map(v => v.annualCost * 5 + v.implCost),
+                    colorscale: 'Viridis',
+                    showscale: true,
+                    colorbar: {
+                        title: '5-Year TCO',
+                        tickformat: '$,.0f'
+                    },
+                    line: {
+                        color: 'white',
+                        width: 2
+                    }
+                },
+                line: {
+                    color: 'rgba(102, 126, 234, 0.3)',
+                    width: 2,
+                    shape: 'spline'
+                },
+                text: vendors.map(v => '$' + (v.annualCost * 5 + v.implCost).toLocaleString()),
+                textposition: 'top center',
+                hovertemplate: '<b>%{x}</b><br>5-Year TCO: $%{y:,.0f}<extra></extra>'
+            }];
+            
+            const tcoLayout = {
+                xaxis: {
+                    title: 'Vendors',
+                    tickangle: -45
+                },
+                yaxis: {
+                    title: '5-Year Total Cost of Ownership ($)',
+                    tickformat: '$,.0f'
+                },
+                margin: { t: 20, b: 100 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: {
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }
+            };
+            
+            Plotly.newPlot('tcoChart', tcoData, tcoLayout, {responsive: true});
+            
+            // Deployment Model Pie Chart
+            const deploymentCounts = _.countBy(vendors, 'deploymentModel');
+            const deploymentData = [{
+                values: Object.values(deploymentCounts),
+                labels: Object.keys(deploymentCounts),
+                type: 'pie',
+                hole: 0.4,
+                marker: {
+                    colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'],
+                    line: {
+                        color: 'white',
+                        width: 2
+                    }
+                },
+                textfont: {
+                    size: 14,
+                    color: 'white'
+                },
+                hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>%{percent}<extra></extra>'
+            }];
+            
+            const deploymentLayout = {
+                showlegend: true,
+                legend: {
+                    orientation: 'v',
+                    x: 1,
+                    y: 0.5
+                },
+                margin: { t: 20, r: 150 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: {
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }
+            };
+            
+            Plotly.newPlot('deploymentChart', deploymentData, deploymentLayout, {responsive: true});
+        }
+        
+        // Update comparison table
+        function updateComparisonTable() {
+            const container = document.getElementById('comparisonTable');
+            
+            if (vendors.length === 0) {
+                container.innerHTML = '<p>No vendors to compare yet.</p>';
+                return;
+            }
+            
+            const tableHTML = `
+                <table class="vendor-table">
+                    <thead>
+                        <tr>
+                            <th>Criteria</th>
+                            ${vendors.map(v => `<th>${v.name}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Annual License Cost</strong></td>
+                            ${vendors.map(v => `<td>$${v.annualCost.toLocaleString()}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Implementation Cost</strong></td>
+                            ${vendors.map(v => `<td>$${v.implCost.toLocaleString()}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>5-Year TCO</strong></td>
+                            ${vendors.map(v => `<td>$${(v.annualCost * 5 + v.implCost).toLocaleString()}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Annual Price Increase</strong></td>
+                            ${vendors.map(v => `<td>${v.priceIncrease}%</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Hidden Costs Estimate</strong></td>
+                            ${vendors.map(v => `<td>$${(v.hiddenCosts || 0).toLocaleString()}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Implementation Timeline</strong></td>
+                            ${vendors.map(v => `<td>${v.timeline} weeks</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Deployment Model</strong></td>
+                            ${vendors.map(v => `<td>${v.deploymentModel}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Database</strong></td>
+                            ${vendors.map(v => `<td>${v.database}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Support Hours</strong></td>
+                            ${vendors.map(v => `<td>${v.supportHours}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>API Availability</strong></td>
+                            ${vendors.map(v => `<td>${v.apiAvailability}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Training Hours</strong></td>
+                            ${vendors.map(v => `<td>${v.trainingHours} hours</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>Student Portal</strong></td>
+                            ${vendors.map(v => `<td>${v.studentPortal}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td><strong>LMS Integration</strong></td>
+                            ${vendors.map(v => `<td>${v.lmsIntegration}</td>`).join('')}
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+        
+        // Generate share link
+        function generateShareLink() {
+            const baseUrl = window.location.href.split('?')[0];
+            const shareUrl = `${baseUrl}?form=vendor-submission&institution=charleston-law`;
+            document.getElementById('shareLink').textContent = shareUrl;
+        }
+        
+        // Copy share link
+        function copyShareLink() {
+            const shareLink = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(shareLink).then(() => {
+                alert('Share link copied to clipboard!');
+            });
+        }
+        
+        // Export comparison
+        function exportComparison() {
+            const wb = XLSX.utils.book_new();
+            
+            // Create comparison data
+            const comparisonData = [
+                ['Charleston School of Law - SIS Vendor Comparison'],
+                ['Generated: ' + new Date().toLocaleString()],
+                ['Student Count: 650'],
+                [],
+                ['Vendor', 'Annual Cost', 'Implementation', '5-Year TCO', 'Timeline (weeks)', 'Deployment', 'Database', 'Support']
+            ];
+            
+            vendors.forEach(v => {
+                comparisonData.push([
+                    v.name,
+                    v.annualCost,
+                    v.implCost,
+                    v.annualCost * 5 + v.implCost,
+                    v.timeline,
+                    v.deploymentModel,
+                    v.database,
+                    v.supportHours
+                ]);
+            });
+            
+            // Add averages
+            if (vendors.length > 0) {
+                comparisonData.push([]);
+                comparisonData.push([
+                    'AVERAGE',
+                    vendors.reduce((sum, v) => sum + v.annualCost, 0) / vendors.length,
+                    vendors.reduce((sum, v) => sum + v.implCost, 0) / vendors.length,
+                    vendors.reduce((sum, v) => sum + (v.annualCost * 5 + v.implCost), 0) / vendors.length,
+                    vendors.reduce((sum, v) => sum + v.timeline, 0) / vendors.length,
+                    '',
+                    '',
+                    ''
+                ]);
+            }
+            
+            const ws = XLSX.utils.aoa_to_sheet(comparisonData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Vendor Comparison');
+            
+            // Add detailed vendor sheets
+            vendors.forEach(v => {
+                const vendorData = [
+                    [v.name + ' - Detailed Information'],
+                    [],
+                    ['Field', 'Value'],
+                    ['Contact Person', v.contactPerson],
+                    ['Contact Email', v.contactEmail],
+                    ['Annual Cost', v.annualCost],
+                    ['Implementation Cost', v.implCost],
+                    ['Price Increase %', v.priceIncrease],
+                    ['Hidden Costs', v.hiddenCosts],
+                    ['Timeline (weeks)', v.timeline],
+                    ['Deployment Model', v.deploymentModel],
+                    ['Database', v.database],
+                    ['Support Hours', v.supportHours],
+                    ['API Availability', v.apiAvailability],
+                    ['Training Hours', v.trainingHours],
+                    ['Student Portal', v.studentPortal],
+                    ['LMS Integration', v.lmsIntegration],
+                    [],
+                    ['Notes:']
+                ];
+                
+                if (v.notes && v.notes.length > 0) {
+                    v.notes.forEach(note => {
+                        vendorData.push([`${note.user} (${new Date(note.timestamp).toLocaleString()})`, note.text]);
+                    });
+                }
+                
+                const vendorWs = XLSX.utils.aoa_to_sheet(vendorData);
+                XLSX.utils.book_append_sheet(wb, vendorWs, v.name.substring(0, 30));
+            });
+            
+            XLSX.writeFile(wb, `Charleston_Law_SIS_Comparison_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+        
+        // Export all data
+        function exportAllData() {
+            exportComparison();
+        }
+        
+        // Export JSON
+        function exportJSON() {
+            const data = {
+                vendors: vendors,
+                notes: notes,
+                settings: settings,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Charleston_Law_SIS_Data_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Import JSON
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        vendors = data.vendors || [];
+                        notes = data.notes || [];
+                        settings = data.settings || settings;
+                        saveData();
+                        updateDashboard();
+                        alert('Data imported successfully!');
+                    } catch (error) {
+                        alert('Error importing data: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('charleston_sis_vendors', JSON.stringify(vendors));
+            localStorage.setItem('charleston_sis_notes', JSON.stringify(notes));
+            localStorage.setItem('charleston_sis_settings', JSON.stringify(settings));
+            
+            // Update summary
+            document.getElementById('summaryVendors').textContent = vendors.length;
+            document.getElementById('summaryNotes').textContent = notes.length;
+            document.getElementById('summaryUpdated').textContent = new Date().toLocaleTimeString();
+            
+            const contributors = new Set();
+            notes.forEach(n => contributors.add(n.user));
+            document.getElementById('summaryContributors').textContent = contributors.size;
+        }
+        
+        // Load data from localStorage
+        function loadData() {
+            const savedVendors = localStorage.getItem('charleston_sis_vendors');
+            const savedNotes = localStorage.getItem('charleston_sis_notes');
+            const savedSettings = localStorage.getItem('charleston_sis_settings');
+            
+            if (savedVendors) vendors = JSON.parse(savedVendors);
+            if (savedNotes) notes = JSON.parse(savedNotes);
+            if (savedSettings) settings = JSON.parse(savedSettings);
+        }
+        
+        // Delete vendor
+        function deleteVendor(id) {
+            if (confirm('Are you sure you want to delete this vendor?')) {
+                vendors = vendors.filter(v => v.id !== id);
+                notes = notes.filter(n => n.vendorId !== id);
+                saveData();
+                updateDashboard();
+            }
+        }
+        
+        // View vendor details
+        function viewVendor(id) {
+            const vendor = vendors.find(v => v.id === id);
+            if (vendor) {
+                const details = `
+                    Vendor: ${vendor.name}
+                    Contact: ${vendor.contactPerson} (${vendor.contactEmail})
+                    Annual Cost: $${vendor.annualCost.toLocaleString()}
+                    Implementation: $${vendor.implCost.toLocaleString()}
+                    5-Year TCO: $${(vendor.annualCost * 5 + vendor.implCost).toLocaleString()}
+                    Timeline: ${vendor.timeline} weeks
+                    Deployment: ${vendor.deploymentModel}
+                    Database: ${vendor.database}
+                    Support: ${vendor.supportHours}
+                    API: ${vendor.apiAvailability}
+                    Training: ${vendor.trainingHours} hours
+                    Student Portal: ${vendor.studentPortal}
+                    LMS: ${vendor.lmsIntegration}
+                    Hidden Costs: $${(vendor.hiddenCosts || 0).toLocaleString()}
+                    
+                    Notes:
+                    ${vendor.notes.map(n => `${n.user}: ${n.text}`).join('\n')}
+                `;
+                alert(details);
+            }
+        }
+        
+        // Reset all data
+        function resetData() {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone!')) {
+                vendors = [];
+                notes = [];
+                localStorage.clear();
+                updateDashboard();
+                alert('All data has been reset.');
+            }
+        }
+        
+        // Save settings
+        function saveSettings() {
+            settings.institutionName = document.getElementById('institutionName').value;
+            settings.studentCount = document.getElementById('studentCount').value;
+            settings.institutionType = document.getElementById('institutionType').value;
+            settings.budgetRange = document.getElementById('budgetRange').value;
+            saveData();
+            alert('Settings saved successfully!');
+        }
+        
+        // Placeholder functions for features not fully implemented
+        function generateQR() {
+            alert('QR code generation would be implemented here using a QR library');
+        }
+        
+        function emailLink() {
+            const shareLink = document.getElementById('shareLink').textContent;
+            window.location.href = `mailto:?subject=SIS Vendor Submission Form&body=Please submit your SIS proposal at: ${shareLink}`;
+        }
+        
+        function exportPDF() {
+            alert('PDF export would be implemented here using a PDF generation library');
+        }
+        
+        function generateReport() {
+            alert('Detailed report generation would be implemented here');
+        }
+    </script>
+</body>
+</html>
